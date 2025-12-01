@@ -14,8 +14,9 @@ import (
 )
 
 type lastOp struct {
-	Timestamp string   `json:"timestamp"`
-	Changes   []change `json:"changes"`
+	Timestamp       string   `json:"timestamp"`
+	OriginalContent string   `json:"original_content"` // Original source file content before revision
+	Changes         []change `json:"changes"`
 }
 
 type change struct {
@@ -242,6 +243,8 @@ func Run(cfg config.Config, pathPrefix string) error {
 
 	// Log operations
 	ops := lastOp{Timestamp: time.Now().Format(time.RFC3339)}
+	// Save original content for undo
+	ops.OriginalContent = string(b)
 	if isBundle {
 		ops.Changes = append(ops.Changes, change{Source: filepath.Dir(sourceFile), Target: archivedDir, Action: "copy"})
 	} else {
