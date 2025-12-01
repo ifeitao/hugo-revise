@@ -1,0 +1,95 @@
+{{- $p := . -}}
+{{- $raw := $p.Param "revisions_history" -}}
+{{- if not $raw -}}
+  {{- $raw = $p.Params.revisions_history -}}
+{{- end -}}
+{{- if $raw -}}
+  <style>
+    .revision-history-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.12);
+      border-radius: 8px;
+    }
+    .revision-history-label {
+      font-size: 0.9rem;
+      color: rgba(0,0,0,0.65);
+      white-space: nowrap;
+    }
+    .revision-history-select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding: 6px 28px 6px 10px;
+      font-size: 0.95rem;
+      border: 1px solid rgba(0,0,0,0.18);
+      border-radius: 6px;
+      background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>') no-repeat right 8px center;
+      color: #222;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .revision-history-select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    .revision-history-select:hover {
+      border-color: rgba(0,0,0,0.3);
+    }
+  </style>
+  {{- $base := $p.RelPermalink -}}
+  {{- $list := slice -}}
+  {{- if reflect.IsSlice $raw -}}
+    {{- range $raw -}}
+      {{- $list = $list | append (trim . " ") -}}
+    {{- end -}}
+  {{- else -}}
+    {{- range split (string $raw) "," -}}
+      {{- $t := trim . " " -}}
+      {{- if ne $t "" -}}
+        {{- $list = $list | append $t -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $last := index $list (sub (len $list) 1) -}}
+  {{- $isArchived := in $base "/revisions/" -}}
+  {{- if $isArchived -}}
+    {{- $parts := (split $base "/revisions/") -}}
+    {{- $base = index $parts 0 -}}
+    {{- $currentVer := trim (index $parts 1) "/" -}}
+  {{- end -}}
+  {{- if not (hasSuffix $base "/") -}}
+    {{- $base = printf "%s/" $base -}}
+  {{- end -}}
+
+  <div class="revision-history-wrap">
+    <select class="revision-history-select" onchange="if(this.value){window.location.href=this.value}">
+      {{- range $list -}}
+        {{- $ver := . -}}
+        {{- $isLatest := eq $ver $last -}}
+        {{- $url := cond (and $isArchived $isLatest) $base (cond (and (not $isArchived) $isLatest) $base (printf "%srevisions/%s/" $base $ver)) -}}
+        {{- $selected := "" -}}
+        {{- if and $isArchived (eq $ver (trim (index (split $p.RelPermalink "/revisions/") 1) "/")) -}}
+          {{- $selected = "selected" -}}
+        {{- end -}}
+        {{- if and (not $isArchived) $isLatest -}}
+          {{- $selected = "selected" -}}
+        {{- end -}}
+        <option value="{{ $url }}" {{ $selected }}>{{ $ver }}</option>
+      {{- end -}}
+    </select>
+    <noscript>
+      <ul style="margin:0; padding:0; list-style:none;">
+        {{- range $list -}}
+          {{- $ver := . -}}
+          {{- $isLatest := eq $ver $last -}}
+          {{- $url := cond (and $isArchived $isLatest) $base (cond (and (not $isArchived) $isLatest) $base (printf "%srevisions/%s/" $base $ver)) -}}
+          <li style="display:inline; margin-right:8px;"><a href="{{ $url }}">{{ $ver }}</a></li>
+        {{- end -}}
+      </ul>
+    </noscript>
+  </div>
+{{- end -}}
